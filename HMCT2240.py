@@ -41,3 +41,10 @@ class HMCT2240(Instrument.Instrument):
         self.power = self.query("POW?")
         return self.power
     
+    def local(self):
+        """ User retains local control """
+        self.write("SYST:COMM:GTL")
+        
+    def remote(self):
+        """ User retains remote control """
+        self.write("SYST:COMM:GTR")
