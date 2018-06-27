@@ -33,7 +33,7 @@ class MSL(Instrument.Instrument):
         'Sets acceleration'
         self.write("A="+str(acl))
         
-    def getAccel(self):
+    def getParam(self):
         'Returns all parameters'
         self.param = self.query("PR AL")
         return self.param
