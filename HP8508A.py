@@ -1,10 +1,10 @@
-from Instrument import Instrument
+import Instrument
 
-class HP8508A(Instrument):
+class HP8508A(Instrument.Instrument):
     '''Class for communicating with an HP 8508A Vector Voltmeter'''
     def __init__(self, resource, strict=False, idString="8508A-050"):
         """Create Vector Voltmeter object from PyVisa resource.
-        
+     
         rm = pyvisa.ResourceManager()
         pm = HP8508A(rm.open_resource(<InstAddr>))
         InstAddr is the PyVisa address of the VVM - try "GPIB::8" by default"""
