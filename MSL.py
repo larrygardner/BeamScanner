@@ -5,13 +5,13 @@ class MSL(Instrument.Instrument):
         with MDrive Motor'''
     
     def __init__(self, resource, strict=False, idString="..."):
-        
+    
+        super().__init__(resource, strict, idString)
+ 
         self.velocity = self.getVelocity()
         self.position = self.getPosition()
         self.param = self.getParam()
-        
-        super().__init__(resource, strict, idString)
-    
+
     def Initialize(self):
         'Sets all variables to stored values'
         self.write("IP")
