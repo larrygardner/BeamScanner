@@ -4,7 +4,7 @@ class MSL(Instrument.Instrument):
     ''' Class for communicating with a Newmark Systems MSL Linear Stage
         with MDrive Motor'''
     
-    def __init__(self, resource, strict=False, idString="8508A-050"):
+    def __init__(self, resource, strict=False, idString="..."):
         
         self.velocity = self.getVelocity()
         self.position = self.getPosition()
@@ -36,6 +36,7 @@ class MSL(Instrument.Instrument):
     def getAccel(self):
         'Returns all parameters'
         self.param = self.query("PR AL")
+        return self.param
     
     def MoveAbs(self, pos):
         'Moves to an absolute position from 0'
@@ -66,6 +67,3 @@ class MSL(Instrument.Instrument):
     def Calibrate(self):
         'Calibration'
         self.write("SC")
-        
-    
-    
