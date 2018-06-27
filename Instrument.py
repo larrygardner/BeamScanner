@@ -14,6 +14,6 @@ class Instrument(object):
 
     def query(self, *args, **kwargs):
         return self.resource.query(*args, **kwargs)
-
+    
     def idn(self):
         return self.query("*IDN?")
