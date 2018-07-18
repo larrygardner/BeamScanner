@@ -16,6 +16,7 @@ start_time = time.time()
 '''Configure Gpib'''
 # Configures GPIB upon new bus entry
 os.system("sudo gpib_config")
+print("GPIB devices configured.")
 
 '''List resources '''
 rm = visa.ResourceManager('@py')
@@ -29,6 +30,7 @@ msl_x = MSL(rm.open_resource("ASRL/dev/ttyUSB0"))
 msl_y = MSL(rm.open_resource('''Address of msl in y direction '''))
 
 '''Initialize'''
+print("Preparing for data ...")
 # Sets MSL velocities
 msl_x.setVelMax(500000)
 msl_y.setVelMax(500000)
