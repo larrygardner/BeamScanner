@@ -3,9 +3,9 @@ Raspberry Pi - GPIB Communication:
 1. Install pyvisa. This has built-in backends for usb, serial, etc. but not GPIB. Linux-gpib is required as a GPIB backend.
 
 	sudo -s
-	install pyvisa 
-	install pyusb
-	install pyvisa-py
+	pip3 install pyvisa 
+	pip3 install pyusb
+	pip3 install pyvisa-py
 
 2. Update system and kernels
 
@@ -13,7 +13,7 @@ Raspberry Pi - GPIB Communication:
 	wget https://raw.githubusercontent.com/notro/rpi-source/master/rpi-source -O /usr/bin/rpi-source && sudo chmod +x /usr/bin/rpi-source && /usr/bin/rpi-source -q --tag-update
 
 	uname -a
-	rpi-srouce 
+	rpi-source 
 	### If this returns an error, do this step.
 	//
 	apt-get update
