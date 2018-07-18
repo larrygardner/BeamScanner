@@ -1,8 +1,17 @@
 import visa
 import os
+import time
+from time import sleep
 from HP8508A import HP8508A as HP
 from HMCT2240 import HMCT2240 as HMC
 from MSL import MSL
+from matplotlib.mlab import griddata
+import matplotlib.pyplot as plt
+import numpy as np
+
+''' Start '''
+print("Starting...")
+start_time = time.time()
 
 '''Configure Gpib'''
 # Configures GPIB upon new bus entry
@@ -10,8 +19,8 @@ os.system("sudo gpib_config")
 
 '''List resources '''
 rm = visa.ResourceManager('@py')
-#lr = rm.list_resources()
-#print(lr)
+lr = rm.list_resources()
+print("Available Resources: "+str(lr))
 
 ''' Establish communication '''
 vvm = HP(rm.open_resource("GPIB0::8::INSTR"))
@@ -20,6 +29,10 @@ msl_x = MSL(rm.open_resource("ASRL/dev/ttyUSB0"))
 msl_y = MSL(rm.open_resource('''Address of msl in y direction '''))
 
 '''Initialize'''
+# Sets MSL velocities
+msl_x.setVelMax(500000)
+msl_y.setVelMax(500000)
+
 # Travel direction of x travel stage
 direction = "right"
 
@@ -44,13 +57,15 @@ pos_data = []
 
 # Conversion factor from metric to microsteps [microsteps / mm]
 conv_factor = 5000 
+
 #Step size for data increments
-step = .5 * conv_factor # .5 mm * 5000 microsteps / mm
+step = int(.5 * conv_factor) # .5 mm * 5000 microsteps / mm
 
 # Position of MSLs such that WG is in center of beam (from calibration)
 pos_x_center = ''' Position of center of beam (x) ''' * conv_factor
 pos_y_center = ''' Position of center of beam (y) ''' * conv_factor
-# Range of travel stage motion (25x25mm)
+
+# Range of travel stage motion (50x50mm)
 pos_x_max = int(25 * conv_factor) # 25 mm * 5000 microsteps per mm
 pos_y_max = pos_x_max
 pos_x_min = -pos_x_max
@@ -63,35 +78,43 @@ msl_x.moveAbs(pos_x_center)
 msl_y.moveAbs(pos_y_center)
 msl_x.hold()
 msl_y.hold()
+
 # This sets the position at the center of beam to be the '0' point reference
 msl_x.setHome()
 msl_y.setHome()
+
 # Moves both travel stages to minimum position
 msl_x.moveAbs(pos_x_min)
 msl_y.moveAbs(pos_y_min)
 msl_x.hold()
 msl_y.hold()
+
 # Gets initial position
 pos_x = int(msl_x.getPos())
 pos_y = int(msl_y.getPos())
+
 # VVM ready to begin collecting data
 vvm.trigger()
 
 '''Collect data'''
+print("Collecting data ...")
+
 while pos_y <= pos_y_max:
     # "Direction" is the direction at which the X MSL travels
     # "Direction" gets reversed to maximize speed
     if direction == "right":
         while pos_x <= pos_x_max:
             # Collects VVM and position data
-            vvm_data.append(vvm.getTransmission())
+            trans = vvm.getTransmission()
+            vvm_data.append(trans)
             pos_data.append((pos_x/conv_factor,pos_y/conv_factor))
+            print("X: " + str(pos_x/conv_factor) + ", Y: " + str(pos_y/conv_factor))
+            print(trans)
             # X MSL steps relatively, if not in maximum position
             if pos_x != pos_x_max:
                 msl_x.moveRel(step)
                 msl_x.hold()
                 pos_x = int(msl_x.getPos())
-                print(pos_x)
             elif pos_x == pos_x_max:
                 break
         direction = "left"
@@ -99,8 +122,11 @@ while pos_y <= pos_y_max:
     elif direction == "left":
         while pos_x >= pos_x_min:
             # Collects VVM and position data
-            vvm_data.append(vvm.getTransmission())
+            trans = vvm.getTransmission()
+            vvm_data.append(trans)
             pos_data.append((pos_x/conv_factor,pos_y/conv_factor))
+            print("X: " + str(pos_x/conv_factor) + ", Y: " + str(pos_y/conv_factor))
+            print(trans)
             # X MSL steps relatively in opposite direction (-), if not in minimum position
             if pos_x != pos_x_min:
                 msl_x.moveRel(-step)
@@ -115,11 +141,46 @@ while pos_y <= pos_y_max:
     msl_y.hold()
     pos_y = int(msl_y.getPos())
 
-# Displays vvm and position data
-print(vvm_data)
-print(pos_data)
-
 # Turns signal generator off
 sg.off()
 
+# Execution time
+print("Execution time: " + str(time.time() - start_time))
 
+''' Plotting Data '''
+print("Plotting data ...")
+
+x_data = []
+y_data = []
+pow_data = []
+phase_data = []
+
+for i in pos_data:
+    x_data.append(i[0])
+    y_data.append(i[1])
+    
+if type(vvm_data[0]) == tuple:
+    for i in vvm_data:
+        pow_data.append(i[0])
+        phase_data.append(i[1])
+elif type(vvm_data[0]) == str:
+    for i in vvm_data:
+        pow_data.append(float(i.split(",")[0]))
+        phase_data.append(float(i.split(",")[1]))
+
+xi = np.linspace(pos_x_min/conv_factor, pos_x_max/conv_factor, 1000)
+yi = np.linspace(pos_y_min/conv_factor, pos_y_max/conv_factor, 1000)
+zi = griddata(x_data, y_data, pow_data, xi, yi, interp='linear')
+
+plt.contour(xi, yi, zi, 15, linewidths=0.5, colors='k')
+plt.contourf(xi, yi, zi, 15, vmax=abs(zi).max(), vmin=-abs(zi).max())
+plt.colorbar()
+plt.xlabel("X Position (mm)")
+plt.ylabeel("Y Position (mm)")
+plt.xlim(pos_x_min/conv_factor, pos_x_max/conv_factor)
+plt.ylim(pos_y_max/conv_factor, pos_y_max/conv_factor)
+plt.title("Power vs. Position")
+plt.show()
+
+''' End '''
+print("End.")
