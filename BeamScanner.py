@@ -36,6 +36,9 @@ msl_y.setVelMax(500000)
 # Travel direction of x travel stage
 direction = "right"
 
+# Sets delay for data points
+delay = 0
+
 # Initialize VVM
 vvm.setTransmission()
 vvm.setTriggerBus()
@@ -105,6 +108,7 @@ while pos_y <= pos_y_max:
     if direction == "right":
         while pos_x <= pos_x_max:
             # Collects VVM and position data
+            time.sleep(delay)
             trans = vvm.getTransmission()
             vvm_data.append(trans)
             pos_data.append((pos_x/conv_factor,pos_y/conv_factor))
@@ -122,6 +126,7 @@ while pos_y <= pos_y_max:
     elif direction == "left":
         while pos_x >= pos_x_min:
             # Collects VVM and position data
+            time.sleep(delay)
             trans = vvm.getTransmission()
             vvm_data.append(trans)
             pos_data.append((pos_x/conv_factor,pos_y/conv_factor))
