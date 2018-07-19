@@ -29,7 +29,7 @@ Raspberry Pi - GPIB Communication:
 
 	apt-get install tk-dev
 
-	apt-get install build-essential texinfo texi2html libcwidget-dev libncurses5-dev libx11-dev binutils-dev bison flex libusb-1.0-0 libusb-dev libmpfr-dev libexpat1-dev tofrodos subversion autoconf automake libtool
+	apt-get install build-essential texinfo texi2html libcwidget-dev libncurses5-dev libx11-dev binutils-dev bison flex libusb-1.0-0 libusb-dev libmpfr-dev libexpat1-dev tofrodos subversion autoconf automake libtool fxload
 	
 	apt-get install raspberrypi-kernel-headers
 	
@@ -42,11 +42,13 @@ Raspberry Pi - GPIB Communication:
 	mkdir linux-gpib
 	cd linux-gpib
 	svn checkout svn://svn.code.sf.net/p/linux-gpib/code/trunk linux-gpib-code
-	cd linux-gpib-code/linux-gpib/
+	ldconfig
+	cd linux-gpib-code/linux-gpib-user/
 	./bootstrap
 	./configure
 	make
 	make install
+	cd linux-gpib-code/linux-gpib-kernel/
 
 4. Update to specific GPIB
 
@@ -60,21 +62,40 @@ Raspberry Pi - GPIB Communication:
 	//
 	cd /etc/
 	leafpad gpib.conf #
-	//	
+	//
+	NOTE: If gpib.conf file does not exist, copy info from https://www.cl.cam.ac.uk/~osc22/tutorials/gpib.conf into:
+	//
+	cd /etc/
+	leafpad
+	* save as gpib.conf *
 
+	ldconfig
 	gpib_config
+	
+5. Download firmware
+	wget http://linux-gpib.sourceforge.net/firmware/gpib_firmware-2008-08-10.tar.gz
+	tar xvfz gpib_firmware-2008-08-10.tar.gz
+	cd ..
 
-5. Check for connection
+6. Use fxload to upload firmware
+	wget --content-disposition --no-check-certificate https://downloads.sourceforge.net/project/linux-hotplug/fxload/2008_10_13/fxload-2008_10_13.tar.gz
+	tar xvfz fxload-2008_10_13.tar.gz
+	cd fxload-2008_10_13
+	make
+	sudo make install
+	cd ..
+
+7. Check for connection
 
 	ibtest # (d)evice --> address --> (w)rite --> *IDN? --> (r)ead --> 1024
 
-6. Connect with python
+8. Connect with python
 
 	apt-get install python-dev
-	cd /home/linux-gpib-code/linux-gpib/language/python
+	cd /home/linux-gpib/linux-gpib-code/linux-gpib-user/language/python
 	python3 ./setup.py install
 
-7. Check GPIB with python
+9. Check GPIB with python
 
 	python3
 
@@ -84,14 +105,14 @@ Raspberry Pi - GPIB Communication:
 	inst.write("*IDN?")
 	inst.read(100)
 
-8. Check pyvisa is completely updated
+10. Check pyvisa is completely updated
 
-	python -m visa info
+	python3 -m visa info
 	# All interface types should now read "Available"
 
 NOTE: The GPIB module can be used directly as well to communicate with device. However, the GPIB backend is now supported in pyvisa as well.
 
-9. Check pyvisa in python
+11. Check pyvisa in python
 
 	python3
 	
