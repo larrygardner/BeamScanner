@@ -67,8 +67,8 @@ conv_factor = 5000
 step = int(.5 * conv_factor) # .5 mm * 5000 microsteps / mm
 
 # Position of MSLs such that WG is in center of beam (from calibration)
-pos_x_center = ''' Position of center of beam (x) ''' * conv_factor
-pos_y_center = ''' Position of center of beam (y) ''' * conv_factor
+pos_x_center = int(''' Position of center of beam (x) ''' * conv_factor)
+pos_y_center = int(''' Position of center of beam (y) ''' * conv_factor)
 
 # Range of travel stage motion (50x50mm)
 pos_x_max = int(25 * conv_factor) # 25 mm * 5000 microsteps per mm
@@ -180,12 +180,12 @@ yi = np.linspace(pos_y_min/conv_factor, pos_y_max/conv_factor, 1000)
 zi = griddata(x_data, y_data, pow_data, xi, yi, interp='linear')
 
 plt.contour(xi, yi, zi, 15, linewidths=0.5, colors='k')
-plt.contourf(xi, yi, zi, 15, vmax=abs(zi).max(), vmin=-abs(zi).max())
+plt.contourf(xi, yi, zi, 15, vmax=zi.max(), vmin=zi.min())
 plt.colorbar()
 plt.xlabel("X Position (mm)")
-plt.ylabeel("Y Position (mm)")
+plt.ylabel("Y Position (mm)")
 plt.xlim(pos_x_min/conv_factor, pos_x_max/conv_factor)
-plt.ylim(pos_y_max/conv_factor, pos_y_max/conv_factor)
+plt.ylim(pos_y_min/conv_factor, pos_y_max/conv_factor)
 plt.title("Power vs. Position")
 plt.show()
 
