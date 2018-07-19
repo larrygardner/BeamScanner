@@ -30,9 +30,11 @@ Raspberry Pi - GPIB Communication:
 	apt-get install tk-dev
 
 	apt-get install build-essential texinfo texi2html libcwidget-dev libncurses5-dev libx11-dev binutils-dev bison flex libusb-1.0-0 libusb-dev libmpfr-dev libexpat1-dev tofrodos subversion autoconf automake libtool
-
+	
+	apt-get install raspberrypi-kernel-headers
+	
 	cd /usr/src/linux-headers-4.9.59-v7+/
-	sudo ln -s arm armv7l
+	ln -s arm armv7l
 
 3. Install linux-gpib
 
