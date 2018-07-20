@@ -8,6 +8,7 @@ from MSL import MSL
 from matplotlib.mlab import griddata
 import matplotlib.pyplot as plt
 import numpy as np
+import sys
 
 ''' Start '''
 print("Starting...")
@@ -29,11 +30,9 @@ vvm = HP(rm.open_resource("GPIB0::8::INSTR"))
 msl_x = MSL(rm.open_resource("ASRL/dev/ttyUSB0"))
 #msl_y = MSL(rm.open_resource('''Address of msl in y direction '''))
 
+
 '''Initialize'''
 print("Preparing for data ...")
-# Sets MSL velocities
-msl_x.setVelMax(500000)
-print(msl_x.getVelMax())
 
 # Travel direction of x travel stage
 direction = "right"
@@ -44,6 +43,10 @@ delay = 0
 # Initialize VVM
 vvm.setTransmission()
 vvm.setTriggerBus()
+
+# Sets MSL velocities
+msl_x.setVelMax(100000)
+print(msl_x.getVelMax())
 
 # Reset MSL variables
 msl_x.zero()
@@ -60,15 +63,22 @@ conv_factor = 5000
 step = int(.5 * conv_factor) # .5 mm * 5000 microsteps / mm
 
 # Position of MSLs such that WG is in center of beam (from calibration)
-pos_x_center = int(25 * conv_factor)
+pos_x_center = int(50 * conv_factor)
 #pos_y_center = int(''' Position of center of beam (y) ''' * conv_factor
 
 # Range of travel stage motion (50x50mm)
-pos_x_max = int(5 * conv_factor) # 25 mm * 5000 microsteps per mm
-pos_y_max = int(5)
+pos_x_max = int(10 * conv_factor) # 25 mm * 5000 microsteps per mm
+pos_y_max = int(10)
 pos_x_min = -pos_x_max
 pos_y_min = -pos_y_max
 
+if pos_x_center <= 2* pos_x_max:
+    print("\n****Data range is too large.****\n****Decrease X-Y max range.****\n")
+    raise
+
+# Sets MSL velocities
+msl_x.setVelMax(500000)
+print(msl_x.getVelMax())
 
 '''Prepare for data'''
 # Moves MSLs to position such that WG is in center of beam
@@ -81,7 +91,6 @@ msl_x.setHome()
 # Moves both travel stages to minimum position
 msl_x.moveAbs(pos_x_min)
 msl_x.hold()
-
 
 # Gets initial position
 pos_x = int(msl_x.getPos())
@@ -134,6 +143,8 @@ while pos_y <= pos_y_max:
         pass
     pos_y += 1
 
+# Sets MSL velocity low for next start
+msl_x.setVelMax(100000)
 
 # Execution time
 print("Execution time: " + str(time.time() - start_time))
