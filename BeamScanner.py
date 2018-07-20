@@ -31,9 +31,6 @@ msl_y = MSL(rm.open_resource('''Address of msl in y direction '''))
 
 '''Initialize'''
 print("Preparing for data ...")
-# Sets MSL velocities
-msl_x.setVelMax(500000)
-msl_y.setVelMax(500000)
 
 # Travel direction of x travel stage
 direction = "right"
@@ -76,6 +73,14 @@ pos_y_max = pos_x_max
 pos_x_min = -pos_x_max
 pos_y_min = pos_x_min
 
+# Checks the center position is sufficient for range size
+if pos_x_center <= 2* pos_x_max:
+    print("\n****Data range is too large.****\n****Decrease X-Y max range.****\n")
+    raise
+
+# Sets MSL velocities
+msl_x.setVelMax(500000)
+msl_y.setVelMax(500000)
 
 '''Prepare for data'''
 # Moves MSLs to position such that WG is in center of beam
@@ -148,6 +153,10 @@ while pos_y <= pos_y_max:
     msl_y.hold()
     pos_y = int(msl_y.getPos())
 
+# Sets MSL velocities low for next start
+msl_x.setVelMax(100000)
+msl_y.setVelMax(100000)
+    
 # Turns signal generator off
 sg.off()
 
