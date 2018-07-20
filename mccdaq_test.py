@@ -1,5 +1,15 @@
+#####################################################################################
+# For use with devices compatible with UL for Linux, as listed here:                #
+#   https://www.mccdaq.com/PDFs/Manuals/Linux-hw.pdf                                #
+#                                                                                   #
+# For python reference:                                                             #
+#   https://www.mccdaq.com/PDFs/Manuals/UL-Linux/python/api.html#device-discovery   #
+#                                                                                   #
+#####################################################################################
+
 """
 ### To get a one-time read out from one device ###
+
 from uldaq import (get_daq_device_inventory, DaqDevice, InterfaceType, AiInputMode, Range, AInFlag)
 
 devices = get_daq_device_inventory(InterfaceType.USB)
@@ -15,6 +25,7 @@ for channel in range(ai_info.get_num_chans()):
 
 daq_device.disconnect()
 daq_device.release()
+
 """
 ### To get a continuous read out from 2 devices ###
 
