@@ -8,7 +8,6 @@
 #####################################################################################
 
 ''' Program to get a continuous read out of analog data from any number of compatible devices '''
-from __future__ import print_function
 from time import sleep
 from os import system
 from sys import stdout
@@ -83,7 +82,7 @@ while True:
         for channel in range(low_channel, high_channel + 1):
             data = ai_device["ai_device_" + str(i)].a_in(channel, input_mode["input_mode_" + str(i)], ranges["ranges_" + str(i)][range_index], AInFlag.DEFAULT)
             print('Channel(', channel, ') Data: ', '{:.6f}'.format(data), sep='')
-    
+        print('\n')
     sleep(0.1)
     
     if KeyboardInterrupt:
