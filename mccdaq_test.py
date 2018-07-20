@@ -1,4 +1,5 @@
 """
+### To get a one-time read out from one device ###
 from uldaq import (get_daq_device_inventory, DaqDevice, InterfaceType, AiInputMode, Range, AInFlag)
 
 devices = get_daq_device_inventory(InterfaceType.USB)
@@ -15,8 +16,8 @@ for channel in range(ai_info.get_num_chans()):
 daq_device.disconnect()
 daq_device.release()
 """
+### To get a continuous read out from 2 devices ###
 
-from __future__ import print_function
 from time import sleep
 from os import system
 from sys import stdout
@@ -25,8 +26,8 @@ from uldaq import get_daq_device_inventory, DaqDevice, InterfaceType, AiInputMod
 
 
 daq_device = None
-
 descriptor_index = 0
+descriptor_index_2 = 1
 range_index = 0
 interface_type = InterfaceType.USB
 low_channel = 0
@@ -42,8 +43,8 @@ for i in range(number_of_devices):
     print('  ', devices[i].product_name, ' (', devices[i].unique_id, ')', sep='')
 
 # Create the DAQ device object associated with the specified descriptor index.
-daq_device = DaqDevice(devices[0])
-daq_device_2 = DaqDevice(devices[1])
+daq_device = DaqDevice(devices[descriptor_index])
+daq_device_2 = DaqDevice(devices[descriptor_index_2])
 
 # Get the AiDevice object and verify that it is valid.
 ai_device = daq_device.get_ai_device()
@@ -69,12 +70,12 @@ input_mode_2 = AiInputMode.SINGLE_ENDED
 if high_channel >= number_of_channels:
     high_channel = number_of_channels - 1
 
-
 ranges = ai_info.get_ranges(input_mode)
 ranges_2 = ai_info_2.get_ranges(input_mode_2)
     
 if range_index >= len(ranges):
     range_index = len(ranges) - 1
+    
 print('\n', descriptor.dev_string, ' ready', sep='')
 print('    Function demonstrated: ai_device.a_in()')
 print('    Channels: ', low_channel, '-', high_channel)
