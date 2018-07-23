@@ -1,16 +1,25 @@
+################################################################
+# Download these files from github:                            #
+# HP8508A.py , HMCT2240.py and  MSL.py to control instruments  #
+# time_plot.py , contour_plot and y_plot.py to make plots      #
+################################################################
+
 import visa
 import os
 import time
 from time import sleep
+
 from HP8508A import HP8508A as HP
 from HMCT2240 import HMCT2240 as HMC
 from MSL import MSL
-from matplotlib.mlab import griddata
-import matplotlib.pyplot as plt
-import numpy as np
+
+from time_plot import time_plot
+from contour_plot import contour_plot
+from y_plot import y_plot
+
 
 ''' Start '''
-print("Starting...")
+print("Starting...\n")
 start_time = time.time()
 
 # Configures GPIB upon new bus entry
@@ -33,7 +42,8 @@ msl_y = MSL(rm.open_resource('''Address of msl in y direction '''))
 # MSL velocities
 print("Maximum velocity: "+ str(msl_x.getVelMax()))
 
-# Data format
+# VVM data format
+vvm.setFormatLog()
 print("VVM format: " + str(vvm.getFormat()) + "\n")
 
 # Travel direction of x travel stage
@@ -60,6 +70,7 @@ msl_y.hold()
 # Establish data arrays
 vvm_data = []
 pos_data = []
+time_data = []
 
 # Conversion factor from metric to microsteps [microsteps / mm]
 conv_factor = 5000 
@@ -121,6 +132,7 @@ while pos_y <= pos_y_max:
         while pos_x <= pos_x_max:
             # Collects VVM and position data
             time.sleep(delay)
+            time_data.append(time.time())
             trans = vvm.getTransmission()
             vvm_data.append(trans)
             pos_data.append((pos_x/conv_factor,pos_y/conv_factor))
@@ -141,6 +153,7 @@ while pos_y <= pos_y_max:
         while pos_x >= pos_x_min:
             # Collects VVM and position data
             time.sleep(delay)
+            time_data.append(time.time())
             trans = vvm.getTransmission()
             vvm_data.append(trans)
             pos_data.append((pos_x/conv_factor,pos_y/conv_factor))
@@ -168,41 +181,23 @@ sg.off()
 # Execution time
 print("Execution time: " + str(time.time() - start_time))
 
+# Adjusts time data
+time_initial = time_data[0]
+for i in range(len(time_data)):
+    time_data[i] = time_data[i] - time_initial
+    
 
 ''' Plotting Data '''
 print("Plotting data ...")
 
-x_data = []
-y_data = []
-pow_data = []
-phase_data = []
+# Plots position vs. amplitude contour plot via function
+contour_plot(pos_data, vvm_data)
 
-for i in pos_data:
-    x_data.append(i[0])
-    y_data.append(i[1])
-    
-if type(vvm_data[0]) == tuple:
-    for i in vvm_data:
-        pow_data.append(i[0])
-        phase_data.append(i[1])
-elif type(vvm_data[0]) == str:
-    for i in vvm_data:
-        pow_data.append(float(i.split(",")[0]))
-        phase_data.append(float(i.split(",")[1]))
+# Plots amplitude and phase vs. time
+time_plot(time_data, vvm_data)
 
-xi = np.linspace(pos_x_min/conv_factor, pos_x_max/conv_factor, 1000)
-yi = np.linspace(pos_y_min/conv_factor, pos_y_max/conv_factor, 1000)
-zi = griddata(x_data, y_data, pow_data, xi, yi, interp='linear')
-
-plt.contour(xi, yi, zi, 15, linewidths=0.5, colors='k')
-plt.contourf(xi, yi, zi, 15, vmax=zi.max(), vmin=zi.min())
-plt.colorbar()
-plt.xlabel("X Position (mm)")
-plt.ylabel("Y Position (mm)")
-plt.xlim(pos_x_min/conv_factor, pos_x_max/conv_factor)
-plt.ylim(pos_y_min/conv_factor, pos_y_max/conv_factor)
-plt.title("Power vs. Position")
-plt.show()
+# Plots amplitude and phase vs. y position for slice at center of beam
+y_plot(pos_data, vvm_data)
 
 
 ''' End '''
