@@ -2,6 +2,7 @@
 # Download these files from github:                            #
 # HP8508A.py , HMCT2240.py and  MSL.py to control instruments  #
 # time_plot.py , contour_plot and y_plot.py to make plots      #
+# spreadsheet.py to write data to spreadsheet                  #
 ################################################################
 
 import visa
@@ -17,8 +18,13 @@ from time_plot import time_plot
 from contour_plot import contour_plot
 from y_plot import y_plot
 
+from spreadsheet import spreadsheet
+
 
 ''' Start '''
+# Input file name for spreadsheet
+save_name = "test"
+
 print("Starting...\n")
 start_time = time.time()
 
@@ -179,13 +185,17 @@ while pos_y <= pos_y_max:
 sg.off()
 
 # Execution time
-print("Execution time: " + str(time.time() - start_time))
+print("\nExecution time: " + str(time.time() - start_time))
 
 # Adjusts time data
 time_initial = time_data[0]
 for i in range(len(time_data)):
     time_data[i] = time_data[i] - time_initial
     
+# Writing to spread sheet via function
+print("Writing data to spreadsheet...")
+spreadsheet(time_data, pos_data, vvm_data, save_name)
+
 
 ''' Plotting Data '''
 print("Plotting data ...")
@@ -201,4 +211,4 @@ y_plot(pos_data, vvm_data)
 
 
 ''' End '''
-print("End.")
+print("\nEnd.")
