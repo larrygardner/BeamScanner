@@ -13,24 +13,28 @@ import numpy as np
 print("Starting...")
 start_time = time.time()
 
-'''Configure Gpib'''
 # Configures GPIB upon new bus entry
 os.system("sudo gpib_config")
 print("GPIB devices configured.")
 
-'''List resources '''
+# List availabe resources
 rm = visa.ResourceManager('@py')
 lr = rm.list_resources()
 print("Available Resources: "+str(lr))
 
-''' Establish communication '''
+# Establish communication 
 vvm = HP(rm.open_resource("GPIB0::8::INSTR"))
 sg = HMC(rm.open_resource("GPIB0::30::INSTR")) 
 msl_x = MSL(rm.open_resource("ASRL/dev/ttyUSB0"))
 msl_y = MSL(rm.open_resource('''Address of msl in y direction '''))
 
+
 '''Initialize'''
-print("Preparing for data ...")
+# MSL velocities
+print("Maximum velocity: "+ str(msl_x.getVelMax()))
+
+# Data format
+print("VVM format: " + str(vvm.getFormat()) + "\n")
 
 # Travel direction of x travel stage
 direction = "right"
@@ -73,16 +77,17 @@ pos_y_max = pos_x_max
 pos_x_min = -pos_x_max
 pos_y_min = pos_x_min
 
-# Checks the center position is sufficient for range size
-if pos_x_center <= 2* pos_x_max:
-    print("\n****Data range is too large.****\n****Decrease X-Y max range.****\n")
+# Limits center position given range of travel
+if pos_x_center <= pos_x_max or (100*conv_factor - pos_x_center) <= pos_x_max:
+    print("\n****Data range is too large.****\n****Adjust X max range.****\n")
+    raise
+elif pos_y_center <= pos_y_max or (100*conv_factor - pos_y_center) <= pos_y_max:
+    print("\n****Data range is too large.****\n****Adjust Y max range.****\n")
     raise
 
-# Sets MSL velocities
-msl_x.setVelMax(500000)
-msl_y.setVelMax(500000)
-
 '''Prepare for data'''
+print("Preparing for data ...")
+
 # Moves MSLs to position such that WG is in center of beam
 msl_x.moveAbs(pos_x_center)
 msl_y.moveAbs(pos_y_center)
@@ -107,7 +112,7 @@ pos_y = int(msl_y.getPos())
 vvm.trigger()
 
 '''Collect data'''
-print("Collecting data ...")
+print("\nCollecting data ...")
 
 while pos_y <= pos_y_max:
     # "Direction" is the direction at which the X MSL travels
@@ -119,8 +124,8 @@ while pos_y <= pos_y_max:
             trans = vvm.getTransmission()
             vvm_data.append(trans)
             pos_data.append((pos_x/conv_factor,pos_y/conv_factor))
-            print("X: " + str(pos_x/conv_factor) + ", Y: " + str(pos_y/conv_factor))
-            print(trans)
+            print("    X: " + str(pos_x/conv_factor) + ", Y: " + str(pos_y/conv_factor))
+            print("    " + str(trans))
             # X MSL steps relatively, if not in maximum position
             if pos_x != pos_x_max:
                 msl_x.moveRel(step)
@@ -128,8 +133,10 @@ while pos_y <= pos_y_max:
                 pos_x = int(msl_x.getPos())
             elif pos_x == pos_x_max:
                 break
+            
         direction = "left"
         pass
+    
     elif direction == "left":
         while pos_x >= pos_x_min:
             # Collects VVM and position data
@@ -137,8 +144,8 @@ while pos_y <= pos_y_max:
             trans = vvm.getTransmission()
             vvm_data.append(trans)
             pos_data.append((pos_x/conv_factor,pos_y/conv_factor))
-            print("X: " + str(pos_x/conv_factor) + ", Y: " + str(pos_y/conv_factor))
-            print(trans)
+            print("    X: " + str(pos_x/conv_factor) + ", Y: " + str(pos_y/conv_factor))
+            print("    " + str(trans))
             # X MSL steps relatively in opposite direction (-), if not in minimum position
             if pos_x != pos_x_min:
                 msl_x.moveRel(-step)
@@ -146,22 +153,21 @@ while pos_y <= pos_y_max:
                 pos_x = int(msl_x.getPos())
             elif pos_x == pos_x_min:
                 break
+            
         direction = "right"
         pass
+    
     # Y MSL steps relatively 
     msl_y.moveRel(step)
     msl_y.hold()
     pos_y = int(msl_y.getPos())
 
-# Sets MSL velocities low for next start
-msl_x.setVelMax(100000)
-msl_y.setVelMax(100000)
-    
 # Turns signal generator off
 sg.off()
 
 # Execution time
 print("Execution time: " + str(time.time() - start_time))
+
 
 ''' Plotting Data '''
 print("Plotting data ...")
@@ -197,6 +203,7 @@ plt.xlim(pos_x_min/conv_factor, pos_x_max/conv_factor)
 plt.ylim(pos_y_min/conv_factor, pos_y_max/conv_factor)
 plt.title("Power vs. Position")
 plt.show()
+
 
 ''' End '''
 print("End.")
