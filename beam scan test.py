@@ -22,6 +22,9 @@ from spreadsheet import spreadsheet
 
 
 ''' Start '''
+# Input file name for spreadsheet
+save_name = "test"
+
 print("Starting...\n")
 start_time = time.time()
 
@@ -171,7 +174,7 @@ for i in range(len(time_data)):
 
 # Writing to spread sheet via function
 print("Writing data to spreadsheet...")
-spreadsheet(time_data, pos_data, vvm_data, "test")
+spreadsheet(time_data, pos_data, vvm_data, save_name)
 
 
 ''' Plotting Data '''
