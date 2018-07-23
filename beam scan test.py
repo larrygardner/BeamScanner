@@ -2,6 +2,7 @@
 # Download these files from github:                            #
 # HP8508A.py , HMCT2240.py and  MSL.py to control instruments  #
 # time_plot.py , contour_plot and y_plot.py to make plots      #
+# spreadsheet.py to write data to spreadsheet                  #
 ################################################################
 
 import visa
@@ -16,6 +17,8 @@ from MSL import MSL
 from time_plot import time_plot
 from contour_plot import contour_plot
 from y_plot import y_plot
+
+from spreadsheet import spreadsheet
 
 
 ''' Start '''
@@ -72,12 +75,12 @@ conv_factor = 5000
 step = int(1 * conv_factor) # .5 mm * 5000 microsteps / mm
 
 # Position of MSLs such that WG is in center of beam (from calibration)
-pos_x_center = int(50 * conv_factor)
+pos_x_center = int(20 * conv_factor)
 #pos_y_center = int(''' Position of center of beam (y) ''' * conv_factor
 
 # Range of travel stage motion (50x50mm)
-pos_x_max = int(10 * conv_factor) # 25 mm * 5000 microsteps per mm
-pos_y_max = int(10)
+pos_x_max = int(1 * conv_factor) # 25 mm * 5000 microsteps per mm
+pos_y_max = int(1)
 pos_x_min = -pos_x_max
 pos_y_min = -pos_y_max
 
@@ -159,12 +162,16 @@ while pos_y <= pos_y_max:
     pos_y += 1
 
 # Execution time
-print("Execution time: " + str(time.time() - start_time))
+print("\nExecution time: " + str(time.time() - start_time))
 
 # Adjusts time data
 time_initial = time_data[0]
 for i in range(len(time_data)):
     time_data[i] = time_data[i] - time_initial
+
+# Writing to spread sheet via function
+print("Writing data to spreadsheet...")
+spreadsheet(time_data, pos_data, vvm_data, "test")
 
 
 ''' Plotting Data '''
@@ -181,4 +188,4 @@ y_plot(pos_data, vvm_data)
 
 
 ''' End '''
-print("End.")
+print("\nEnd.")
