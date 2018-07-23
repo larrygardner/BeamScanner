@@ -7,7 +7,7 @@ class HMCT2240(Instrument.Instrument):
         
         rm = pyvisa.ResourceManager()
         sg = HMCT2240(rm.open_resource(<InstAddr>))
-        InstAddr is the PyVisa address of the SG - try "GPIB0::30" by default"""
+        InstAddr is the PyVisa address of the SG - try "GPIB0::30::INSTR" by default"""
         
         super().__init__(resource, strict, idString)
         
