@@ -11,10 +11,13 @@
 from time import sleep
 from os import system
 from sys import stdout
+import sys
 
 from uldaq import get_daq_device_inventory, DaqDevice, InterfaceType, AiInputMode, AInFlag
 
-
+def reset_cursor():
+    stdout.write('\033[1;1H')
+    
 daq_device = None
 
 descriptor_index = 0
@@ -35,7 +38,7 @@ devices = get_daq_device_inventory(interface_type)
 number_of_devices = len(devices)
 if number_of_devices == 0:
     raise Exception('Error: No DAQ devices found')
-print('Found', number_of_devices, 'DAQ device(s):')
+print('\nFound', number_of_devices, 'DAQ device(s):')
 
 for i in range(number_of_devices):
     print('  ', devices[i].product_name, ' (', devices[i].unique_id, ')', sep='')
@@ -46,15 +49,15 @@ for i in range(number_of_devices):
     # Get the AiDevice object and verify that it is valid.
     ai_device["ai_device_" + str(i) ] = daq_device["daq_device_" + str(i)].get_ai_device()
 
-
     # Establish a connection to the DAQ device.
     descriptor["descriptor_" + str(i)] = daq_device["daq_device_" + str(i)].get_descriptor()
+    
+print('\n')
 
-for i in range(number_of_devices):
-    print('\nConnecting to', descriptor["descriptor_" + str(i)].dev_string, '- please wait...')
+for i in range(number_of_devices):   
+    print('Connecting to', descriptor["descriptor_" + str(i)].dev_string, '- please wait...')
     daq_device["daq_device_" + str(i)].connect()
 
-for i in range(number_of_devices):
     ai_info["ai_info_" + str(i)] = ai_device["ai_device_" + str(i)].get_info()
     number_of_channels["number_of_channels_" + str(i)] = ai_info["ai_info_" + str(i)].get_num_chans_by_mode(AiInputMode.SINGLE_ENDED)
     input_mode["input_mode_" + str(i)] = AiInputMode.SINGLE_ENDED
@@ -74,21 +77,25 @@ except (NameError, SyntaxError):
 
 system('clear')
 
-while True:
-    stdout.write('\033[1;1H')
-    print('Please enter CTRL + C to terminate the process\n')
+try:
+    while True:
+        reset_cursor()
+        print("Please enter CTRL + C to terminate the process\n")
     
-    for i in range(len(ai_device)):
-        for channel in range(low_channel, high_channel + 1):
-            data = ai_device["ai_device_" + str(i)].a_in(channel, input_mode["input_mode_" + str(i)], ranges["ranges_" + str(i)][range_index], AInFlag.DEFAULT)
-            print('Channel(', channel, ') Data: ', '{:.6f}'.format(data), sep='')
-        print('\n')
-    sleep(0.1)
-    
-    if KeyboardInterrupt:
-        pass
-    
-for i in daq_device:
-    if daq_device[i].is_connected():
-        daq_device[i].disconnect()
-        daq_device[i].release()
+        for i in range(len(ai_device)):
+            #print(str(descriptor["descriptor_" + str(i)].dev_string) + ":")
+            for channel in range(low_channel, high_channel + 1):
+                data = ai_device["ai_device_" + str(i)].a_in(channel, input_mode["input_mode_" + str(i)], ranges["ranges_" + str(i)][range_index], AInFlag.DEFAULT)
+                print('Channel(', channel, ') Data: ', '{:.6f}'.format(data), sep="")
+            print('\n')
+        sleep(0.1)
+  
+except KeyboardInterrupt:
+    system("clear")
+    pass
+
+for i in range(number_of_devices):
+    if daq_device["daq_device_" + str(i)].is_connected():
+        daq_device["daq_device_" + str(i)].disconnect()
+        daq_device["daq_device_" + str(i)].release()
+        print(str(descriptor["descriptor_" + str(i)].dev_string) + " is disconnected.")
