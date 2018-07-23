@@ -7,7 +7,7 @@ class HP8508A(Instrument.Instrument):
      
         rm = pyvisa.ResourceManager()
         pm = HP8508A(rm.open_resource(<InstAddr>))
-        InstAddr is the PyVisa address of the VVM - try "GPIB::8" by default"""
+        InstAddr is the PyVisa address of the VVM - try "GPIB0::8::INSTR" by default"""
 
         super().__init__(resource, strict, idString)
         
@@ -17,7 +17,11 @@ class HP8508A(Instrument.Instrument):
         self.average = self.getAveraging()
         self.triggersource = "UNKNOWN"
         self.triggered = False
-
+        
+        # Set termination characters
+        self.resource.read_termination = '\n'
+        self.resource.write_termination = '\r\n'
+        
     def setTransmission(self):
         '''Set the VVM to output transmission data - relative amplitude (A/B) and phase (A-B)'''
         self.write("SENSE TRANSMISSION")
@@ -36,13 +40,16 @@ class HP8508A(Instrument.Instrument):
         self.write("TRIG:SOUR {:s}".format(trigger))
         self.triggersource = trigger
 
+
     def setTriggerBus(self):
         '''Set the trigger to the Bus clock'''
         self.setTrigger("BUS")
 
+
     def setTriggerFree(self):
         '''Set the trigger to free run'''
         self.setTrigger("FREE")
+
 
     def setFormat(self, format):
         '''Set the output format of the VVM
@@ -54,12 +61,12 @@ class HP8508A(Instrument.Instrument):
             CART - volts as (real, imag)
             '''
         self.write("FORMAT {:s}".format(format))
-        self.getFormat()
+
 
     def getFormat(self):
         '''Return the current output format of the VVM'''
-        #Must include [:-1] to remove '\n'
-        self.format = self.query("FORMAT?")[:-1]
+        self.format = self.query("FORMAT?")
+        
         return self.format
 
 
@@ -72,7 +79,6 @@ class HP8508A(Instrument.Instrument):
         '''Set the VVM to average <window> samples before returning data'''
         '''Window range from 0 to 10 (2^window)'''
         self.write("AVER:COUN {:d}".format(window))
-        self.getAveraging()
 
 
     def getAveraging(self):
@@ -103,13 +109,13 @@ class HP8508A(Instrument.Instrument):
             x = float(datastr.split(",")[0])
             y = float(datastr.split(",")[1])
             data = complex(x, y)
+            
         else: # Unknown format, probably single valued
             try:
                 # Try to convert unknown format to a float, if not return raw string
                 data = float(datastr)
             except ValueError:
                 data = datastr
-
         return data
     
     
