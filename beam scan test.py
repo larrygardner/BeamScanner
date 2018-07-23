@@ -8,23 +8,22 @@ from MSL import MSL
 from matplotlib.mlab import griddata
 import matplotlib.pyplot as plt
 import numpy as np
-import sys
 
 ''' Start '''
-print("Starting...")
+print("Starting...\n")
 start_time = time.time()
 
-'''Configure Gpib'''
 # Configures GPIB upon new bus entry
 os.system("sudo gpib_config")
 print("GPIB devices configured.")
 
-'''List resources '''
+
+# Lists available resources
 rm = visa.ResourceManager('@py')
 lr = rm.list_resources()
 print("Available Resources: "+str(lr))
 
-''' Establish communication '''
+# Establish communication
 vvm = HP(rm.open_resource("GPIB0::8::INSTR"))
 #sg = HMC(rm.open_resource("GPIB0::30::INSTR")) 
 msl_x = MSL(rm.open_resource("ASRL/dev/ttyUSB0"))
@@ -32,7 +31,11 @@ msl_x = MSL(rm.open_resource("ASRL/dev/ttyUSB0"))
 
 
 '''Initialize'''
-print("Preparing for data ...")
+# MSL velocities
+print("Maximum velocity: "+ str(msl_x.getVelMax()))
+
+# Data format
+print("VVM format: " + str(vvm.getFormat()) + "\n")
 
 # Travel direction of x travel stage
 direction = "right"
@@ -43,10 +46,6 @@ delay = 0
 # Initialize VVM
 vvm.setTransmission()
 vvm.setTriggerBus()
-
-# Sets MSL velocities
-msl_x.setVelMax(100000)
-print(msl_x.getVelMax())
 
 # Reset MSL variables
 msl_x.zero()
@@ -60,27 +59,27 @@ pos_data = []
 conv_factor = 5000 
 
 #Step size for data increments
-step = int(.5 * conv_factor) # .5 mm * 5000 microsteps / mm
+step = int(1 * conv_factor) # .5 mm * 5000 microsteps / mm
 
 # Position of MSLs such that WG is in center of beam (from calibration)
-pos_x_center = int(50 * conv_factor)
+pos_x_center = int(10 * conv_factor)
 #pos_y_center = int(''' Position of center of beam (y) ''' * conv_factor
 
 # Range of travel stage motion (50x50mm)
-pos_x_max = int(10 * conv_factor) # 25 mm * 5000 microsteps per mm
-pos_y_max = int(10)
+pos_x_max = int(2 * conv_factor) # 25 mm * 5000 microsteps per mm
+pos_y_max = int(2)
 pos_x_min = -pos_x_max
 pos_y_min = -pos_y_max
 
-if pos_x_center <= 2* pos_x_max:
+# Limits center position given range of travel
+if pos_x_center <= pos_x_max or (100*conv_factor - pos_x_center) <= pos_x_max:
     print("\n****Data range is too large.****\n****Decrease X-Y max range.****\n")
     raise
 
-# Sets MSL velocities
-msl_x.setVelMax(500000)
-print(msl_x.getVelMax())
 
 '''Prepare for data'''
+print("Preparing for data ...")
+
 # Moves MSLs to position such that WG is in center of beam
 msl_x.moveAbs(pos_x_center)
 msl_x.hold()
@@ -99,8 +98,9 @@ pos_y = int(pos_y_min)
 # VVM ready to begin collecting data
 vvm.trigger()
 
+
 '''Collect data'''
-print("Collecting data ...")
+print("\nCollecting data: ")
 
 while pos_y <= pos_y_max:
     # "Direction" is the direction at which the X MSL travels
@@ -109,11 +109,12 @@ while pos_y <= pos_y_max:
         while pos_x <= pos_x_max:
             # Collects VVM and position data
             time.sleep(delay)
-            trans = vvm.getTransmission()
+            trans= vvm.getTransmission()
             vvm_data.append(trans)
             pos_data.append((pos_x/conv_factor,pos_y))
-            print("X: " + str(pos_x/conv_factor) + ", Y: " + str(pos_y))
-            print(trans)
+            print("    X: " + str(pos_x/conv_factor) + ", Y: " + str(pos_y))
+            print("    " + str(trans))
+            
             # X MSL steps relatively, if not in maximum position
             if pos_x != pos_x_max:
                 msl_x.moveRel(step)
@@ -123,6 +124,7 @@ while pos_y <= pos_y_max:
                 break
         direction = "left"
         pass
+        
     elif direction == "left":
         while pos_x >= pos_x_min:
             # Collects VVM and position data
@@ -130,8 +132,8 @@ while pos_y <= pos_y_max:
             trans = vvm.getTransmission()
             vvm_data.append(trans)
             pos_data.append((pos_x/conv_factor,pos_y))
-            print("X: " + str(pos_x/conv_factor) + ", Y: " + str(pos_y))
-            print(trans)
+            print("    X: " + str(pos_x/conv_factor) + ", Y: " + str(pos_y))
+            print("    " + str(trans))
             # X MSL steps relatively in opposite direction (-), if not in minimum position
             if pos_x != pos_x_min:
                 msl_x.moveRel(-step)
@@ -141,13 +143,12 @@ while pos_y <= pos_y_max:
                 break
         direction = "right"
         pass
+    
     pos_y += 1
-
-# Sets MSL velocity low for next start
-msl_x.setVelMax(100000)
 
 # Execution time
 print("Execution time: " + str(time.time() - start_time))
+
 
 ''' Plotting Data '''
 print("Plotting data ...")
@@ -165,6 +166,7 @@ if type(vvm_data[0]) == tuple:
     for i in vvm_data:
         pow_data.append(i[0])
         phase_data.append(i[1])
+        
 elif type(vvm_data[0]) == str:
     for i in vvm_data:
         pow_data.append(float(i.split(",")[0]))
@@ -183,6 +185,7 @@ plt.xlim(pos_x_min/conv_factor, pos_x_max/conv_factor)
 plt.ylim(pos_y_min, pos_y_max)
 plt.title("Power vs. Position")
 plt.show()
+
 
 ''' End '''
 print("End.")
