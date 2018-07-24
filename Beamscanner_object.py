@@ -9,11 +9,10 @@ from matplotlib.mlab import griddata
 import numpy.polynomial.polynomial as poly
 from time import sleep
 
-from HP8508A import HP8508A as HP
-from HMCT2240 import HMCT2240 as HMC
-from MSL import MSL
-from time_plot import time_plot
-from y_plot import y_plot
+import HP8508A
+import HMCT2240
+import MSL
+
         
         
 class Beamscanner:
@@ -24,24 +23,9 @@ class Beamscanner:
         self.msl_y = None
         self.sg = None
         
-        self.direction = "right"
-        self.delay = 0
-        
-        # Set variables for Signal Generator
-        self.freq = 10e6
-        self.power = -60
-        
-        # Establish data arrays
-        self.vvm_data = []
-        self.pos_data = []
-        self.time_data = []
-
         # Conversion factor from metric to microsteps [microsteps / mm]
         self.conv_factor = 5000
         
-        #Step size for data increments
-        self.step = int(1 * self.conv_factor) # .5 mm * 5000 microsteps / mm
-    
     def initTime(self):
         self.start_time = time.time()
         
@@ -60,18 +44,16 @@ class Beamscanner:
         self.vvm.setFormatLog()
         self.vvm.setTriggerBus()
         
-    def initSG(self):
+    def initSG(self, freq= 10e6):
         # Initializes signal generator paramters
-        self.sg.setFreq(self.freq)
+        self.sg.setFreq(freq)
         self.sg.setPower(-60)
         self.sg.on()
     
-    def initMSLX(self):
+    def initMSL(self):
         self.msl_x.zero()
-        self.msl_x.hold()
-    
-    def initMSLY(self):
         self.msl_y.zero()
+        self.msl_x.hold()
         self.msl_y.hold()
         
     def setRange(self, range = 25):
@@ -90,14 +72,22 @@ class Beamscanner:
             raise
         else:
             print("Range is sufficient.\n")
-    
-
-    def makeScanPts(self, Usize, Vsize, Ustep, Vstep, Uoffset = 0, Voffset = 0):
-    
+       
     def findCenter(self):
-        self.pos_x_center = 10 * self.conv_factor
-        self.pos_y_center = 10 * self.conv_factor
-    
+        #### Runs scan, finds maximum amplitude peak. Finds x and y position of the amplitude peak
+        self.setRange(5)
+        self.step = int(.1 * self.conv_factor)
+        self.pos_x_center = 50
+        self.pos_y_center = 50
+        self.moveToCenter()
+        self.initScan()
+        # Begins scan
+        self.scan(.1)
+        max_amp = max(self.vvm_data, key = lambda x: x[1])
+        index = self.vvm_data.index(max_amp)
+        self.pos_x_center = index[0]
+        self.pos_y_center = index[1]              
+        
     def moveToCenter(self):
         self.msl_x.moveAbs(self.pos_x_center)
         self.msl_y.moveAbs(self.pos_y_center)
@@ -120,8 +110,19 @@ class Beamscanner:
         # VVM ready to begin collecting data
         self.vvm.trigger()
         
-    def scan(self):
+    def scan(self, res = 1):
         print("\nCollecting data ...")
+        
+        # Establish data arrays
+        self.vvm_data = []
+        self.pos_data = []
+        self.time_data = []
+
+        self.direction = "right"
+        self.delay = 0
+        
+        #Step size for data increments
+        step = int(res * self.conv_factor)
         
         while self.pos_y <= self.pos_y_max:
             # "Direction" is the direction at which the X MSL travels
@@ -138,7 +139,7 @@ class Beamscanner:
                     print("    " + str(trans))
                     # X MSL steps relatively, if not in maximum position
                     if self.pos_x != self.pos_x_max:
-                        self.msl_x.moveRel(self.step)
+                        self.msl_x.moveRel(step)
                         self.msl_x.hold()
                         self.pos_x = int(self.msl_x.getPos())
                     elif self.pos_x == self.pos_x_max:
@@ -159,7 +160,7 @@ class Beamscanner:
                     print("    " + str(trans))
                     # X MSL steps relatively in opposite direction (-), if not in minimum position
                     if self.pos_x != self.pos_x_min:
-                        self.msl_x.moveRel(-self.step)
+                        self.msl_x.moveRel(-step)
                         self.msl_x.hold()
                         self.pos_x = int(self.msl_x.getPos())
                     elif self.pos_x == self.pos_x_min:
@@ -169,7 +170,7 @@ class Beamscanner:
                 pass
             
             # Y MSL steps relatively 
-            self.msl_y.moveRel(self.step)
+            self.msl_y.moveRel(step)
             self.msl_y.hold()
             self.pos_y = int(self.msl_y.getPos())
                         
@@ -345,23 +346,19 @@ if __name__ == "__main__":
     
     # Establishes instrument communication
     rm = bs.initGPIB()
-    bs.vvm = HP(rm.open_resource("GPIB0::8::INSTR"))
-    bs.sg = HMC(rm.open_resource("GPIB0::30::INSTR"))
-    bs.msl_x = MSL(rm.open_resource("ASRL/dev/ttyUSB0"))
-    bs.msl_y = MSL(rm.open_resource('''''ADDRESS OF MSL IN Y DIRECTION '''''))
+    bs.vvm = HP8508A.HP8508A(rm.open_resource("GPIB0::8::INSTR"))
+    bs.sg = HMCT2240.HMCT2240(rm.open_resource("GPIB0::30::INSTR"))
+    bs.msl_x = MSL.MSL(rm.open_resource("ASRL/dev/ttyUSB0"))
+    bs.msl_y = MSL.MSL(rm.open_resource('''''ADDRESS OF MSL IN Y DIRECTION '''''))
     
     # Initializes instruments
     bs.initVVM()
     bs.initSG()
-    bs.initMSLX()
-    bs.initMSLY()
+    bs.initMSL()
 
-    # MSL velocities
-    print("Maximum velocity: " + str(bs.msl_x.getVelMax()))
-    print("Maximum velocity: " + str(bs.msl_y.getVelMax()))
     # VVM data format
     print("VVM format: " + str(bs.vvm.getFormat()) + "\n")
-
+    
     bs.findCenter()
     bs.setRange()
     
@@ -369,8 +366,8 @@ if __name__ == "__main__":
     bs.moveToCenter()
     bs.initScan()
      
-    # Begins scan
-    bs.scan()
+    # Begins scan with 1mm resolution
+    bs.scan(1)
     
     print("\nExecution time: " + str(time.time() - bs.start_time))
     bs.endSG()
