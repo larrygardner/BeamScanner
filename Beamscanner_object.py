@@ -43,25 +43,25 @@ class Beamscanner:
         self.step = int(1 * self.conv_factor) # .5 mm * 5000 microsteps / mm
     
     def initTime(self):
-        import time
-        start_time = time.time()
-        return start_time
-    
+        self.start_time = time.time()
+        
     def initGPIB(self):
         # Configures GPIB upon new bus entry
         os.system("sudo gpib_config")
-
         # Lists available resources
         rm = visa.ResourceManager('@py')
         lr = rm.list_resources()
-        return rm, lr
+        print("GPIB devices configured. \nAvailable Resources: "+str(lr))
+        return rm
     
     def initVVM(self):
+        # Initializes voltmeter parameters
         self.vvm.setTransmission()
         self.vvm.setFormatLog()
         self.vvm.setTriggerBus()
         
     def initSG(self):
+        # Initializes signal generator paramters
         self.sg.setFreq(self.freq)
         self.sg.setPower(-60)
         self.sg.on()
@@ -77,48 +77,52 @@ class Beamscanner:
     def setRange(self, range = 25):
         # Range of travel stage motion (50x50mm)
         self.pos_x_max = int(range * self.conv_factor) # 25 mm * 5000 microsteps per mm
-        #self.pos_y_max = self.pos_x_max
+        self.pos_y_max = self.pos_x_max
         self.pos_x_min = -self.pos_x_max
-        #self.pos_y_min = self.pos_x_min
-        self.pos_y_max = int(range)
-        self.pos_y_min = -int(range)
+        self.pos_y_min = self.pos_x_min
         
         # Limits center position given range of travel
         if self.pos_x_center <= self.pos_x_max or (100*self.conv_factor - self.pos_x_center) <= self.pos_x_max:
-            return "****Data range is too large.****\n****Adjust X max range.****\n"
+            print("****Data range is too large.****\n****Adjust X max range.****\n")
             raise
         elif self.pos_y_center <= self.pos_y_max or (100*self.conv_factor - self.pos_y_center) <= self.pos_y_max:
-            return "****Data range is too large.****\n****Adjust Y max range.****\n"
+            print("****Data range is too large.****\n****Adjust Y max range.****\n")
             raise
         else:
-            return "Range is sufficient.\n"
+            print("Range is sufficient.\n")
     
-    """
+
     def makeScanPts(self, Usize, Vsize, Ustep, Vstep, Uoffset = 0, Voffset = 0):
-    """
+    
     def findCenter(self):
         self.pos_x_center = 10 * self.conv_factor
         self.pos_y_center = 10 * self.conv_factor
-        return self.pos_x_center, self.pos_y_center
     
     def moveToCenter(self):
         self.msl_x.moveAbs(self.pos_x_center)
-        #self.msl_y.moveAbs(self.pos_y_center)
+        self.msl_y.moveAbs(self.pos_y_center)
         self.msl_x.hold()
-        #self.msl_y.hold()
+        self.msl_y.hold()
         self.msl_x.setHome()
-        #self.msl_y.setHome()
+        self.msl_y.setHome()
        
     def initScan(self):
+        # Moves to minimum positions to begin scan
+        self.msl_x.moveAbs(self.pos_x_min)
+        self.msl_y.moveAbs(self.pos_y_min)
+        self.msl_x.hold()
+        self.msl_y.hold()
+        
         # Gets initial position
         self.pos_x = int(self.msl_x.getPos())
-        #self.pos_y = int(self.msl_y.getPos())
-        self.pos_y = int(2)
-
+        self.pos_y = int(self.msl_y.getPos())
+        
         # VVM ready to begin collecting data
         self.vvm.trigger()
         
     def scan(self):
+        print("\nCollecting data ...")
+        
         while self.pos_y <= self.pos_y_max:
             # "Direction" is the direction at which the X MSL travels
             # "Direction" gets reversed to maximize speed
@@ -129,8 +133,8 @@ class Beamscanner:
                     self.time_data.append(time.time())
                     trans = self.vvm.getTransmission()
                     self.vvm_data.append(trans)
-                    self.pos_data.append((self.pos_x/self.conv_factor,self.pos_y))
-                    print("    X: " + str(self.pos_x/self.conv_factor) + ", Y: " + str(self.pos_y))
+                    self.pos_data.append((self.pos_x/self.conv_factor,self.pos_y/self.conv_factor))
+                    print("    X: " + str(self.pos_x/self.conv_factor) + ", Y: " + str(self.pos_y/self.conv_factor))
                     print("    " + str(trans))
                     # X MSL steps relatively, if not in maximum position
                     if self.pos_x != self.pos_x_max:
@@ -150,8 +154,8 @@ class Beamscanner:
                     self.time_data.append(time.time())
                     trans = self.vvm.getTransmission()
                     self.vvm_data.append(trans)
-                    self.pos_data.append((self.pos_x/self.conv_factor,self.pos_y))
-                    print("    X: " + str(self.pos_x/self.conv_factor) + ", Y: " + str(self.pos_y))
+                    self.pos_data.append((self.pos_x/self.conv_factor,self.pos_y/self.conv_factor))
+                    print("    X: " + str(self.pos_x/self.conv_factor) + ", Y: " + str(self.pos_y/self.conv_factor))
                     print("    " + str(trans))
                     # X MSL steps relatively in opposite direction (-), if not in minimum position
                     if self.pos_x != self.pos_x_min:
@@ -165,20 +169,21 @@ class Beamscanner:
                 pass
             
             # Y MSL steps relatively 
-            #self.msl_y.moveRel(self.step)
-            #self.msl_y.hold()
-            #self.pos_y = int(self.msl_y.getPos())
-            self.pos_y += 1
-            
+            self.msl_y.moveRel(self.step)
+            self.msl_y.hold()
+            self.pos_y = int(self.msl_y.getPos())
+                        
         self.time_initial = self.time_data[0]
         for i in range(len(self.time_data)):
             self.time_data[i] = self.time_data[i] - self.time_initial
             
     def endSG(self):
+        # Turns off signal generator output
         self.sg.off()
     
     def spreadsheet(self, save_name):
-
+        print("Writing data to spreadsheet...")
+        
         # Creates localhost for libre office
         os.system("soffice --accept='socket,host=localhost,port=2002;urp;' --norestore --nologo --nodefault # --headless")
         # Uses pyoo to open spreadsheet
@@ -206,7 +211,7 @@ class Beamscanner:
             # Writes data to spreadsheet
             sheet = doc.sheets[0]
             sheet[0,0:5].values = ["Time (s)","X Position (mm)", "Y Position (mm)", "Amplitude (dB)", "Phase (deg)"]
-            sheet[1:len(self.time_data)+1, 0].values = time_data
+            sheet[1:len(self.time_data)+1, 0].values = self.time_data
             sheet[1:len(self.pos_data)+1, 1].values = x_data
             sheet[1:len(self.pos_data)+1, 2].values = y_data
             sheet[1:len(self.pos_data)+1, 3].values = amp_data
@@ -221,6 +226,7 @@ class Beamscanner:
             
             
     def contour_plot(self):
+        # Makes contour plot given beamscanner object data format, not spreadsheet data format
         x_data = []
         y_data = []
         amp_data = []    
@@ -255,7 +261,7 @@ class Beamscanner:
         plt.show()
     
     def time_plot(self):
-
+        # Makes time vs amplitude & phase plot given beamscanner data format, not spreadsheet data format
         amp_data = []
         phase_data = []
     
@@ -287,7 +293,7 @@ class Beamscanner:
         plt.show()
     
     def y_plot(self):
-    
+        # Makes a plot of amplitude & phase vs. Y-position along X = 0 plane
         y_data = []
         amp_data = []
         phase_data = []    
@@ -333,57 +339,51 @@ class Beamscanner:
 
 if __name__ == "__main__":
     print("Starting...\n")
-    
     bs = Beamscanner()
     
-    start = bs.initTime()
+    bs.initTime()
     
-    rm, lr = bs.initGPIB()
-    print("GPIB devices configured. \nAvailable Resources: "+str(lr))
-    
+    # Establishes instrument communication
+    rm = bs.initGPIB()
     bs.vvm = HP(rm.open_resource("GPIB0::8::INSTR"))
-    #bs.sg = HMC(rm.open_resource("GPIB0::30::INSTR"))
+    bs.sg = HMC(rm.open_resource("GPIB0::30::INSTR"))
     bs.msl_x = MSL(rm.open_resource("ASRL/dev/ttyUSB0"))
-    #bs.msl_y = MSL(rm.open_resource('''''ADDRESS OF MSL IN Y DIRECTION '''''))
+    bs.msl_y = MSL(rm.open_resource('''''ADDRESS OF MSL IN Y DIRECTION '''''))
     
     # Initializes instruments
     bs.initVVM()
-    #bs.initSG()
+    bs.initSG()
     bs.initMSLX()
-    #bs.initMSLY()
+    bs.initMSLY()
 
     # MSL velocities
     print("Maximum velocity: " + str(bs.msl_x.getVelMax()))
-    #print("Maximum velocity: " + str(bs.msl_y.getVelMax()))
+    print("Maximum velocity: " + str(bs.msl_y.getVelMax()))
     # VVM data format
     print("VVM format: " + str(bs.vvm.getFormat()) + "\n")
 
     bs.findCenter()
-    range = bs.setRange(2)
-    print(range)
+    bs.setRange()
     
     print("Preparing for data ...")
-
     bs.moveToCenter()
     bs.initScan()
- 
-    print("\nCollecting data ...")
+     
+    # Begins scan
     bs.scan()
+    
+    print("\nExecution time: " + str(time.time() - bs.start_time))
     bs.endSG()
-    print("\nExecution time: " + str(time.time() - start))
     
     # Writing to spread sheet via function
-    print("Writing data to spreadsheet...")
     bs.spreadsheet("objectTest")
 
     print("Plotting data ...")
-    # Plots position vs. amplitude contour plot via function
-    bs.contour_plot(pos_data, vvm_data)
+    # Plots position vs. amplitude contour plot
+    bs.contour_plot()
     # Plots amplitude and phase vs. time
-    bs.time_plot(time_data, vvm_data)
+    bs.time_plot()
     # Plots amplitude and phase vs. y position for slice at center of beam
-    bs.y_plot(pos_data, vvm_data)
+    bs.y_plot()
 
     print("\nEnd.")
-
-    
