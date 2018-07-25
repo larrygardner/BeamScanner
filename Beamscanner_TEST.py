@@ -50,7 +50,7 @@ class Beamscanner:
         self.vvm.setTransmission()
         self.vvm.setFormat(Format)
         self.vvm.setTriggerBus()
-        print("VVM format: " + str(bs.vvm.getFormat()) + "\n")
+        print("\nVVM format: " + str(bs.vvm.getFormat()) + "\n")
         
     def initSG(self, freq = 10e6, power = -60):
         # Initializes signal generator parameters
@@ -58,7 +58,6 @@ class Beamscanner:
         self.sg.setPower(power)
         self.sg.on()
         print("Signal generator is ON at frequency of " + str(freq) + ".")
-        
     
     def initMSL(self):
         # Initializes MSL home positions to minimum travel position to synchronize between tests
@@ -385,7 +384,7 @@ if __name__ == "__main__":
     bs.setRange(5)
 
     # Preparing to scan
-    print("Preparing for data ...")
+    print("\nPreparing for data ...")
     bs.moveToCenter()
     bs.initScan()
 
