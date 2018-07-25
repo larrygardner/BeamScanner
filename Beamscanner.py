@@ -49,7 +49,7 @@ class Beamscanner:
         self.vvm.setTransmission()
         self.vvm.setFormat(format)
         self.vvm.setTriggerBus()
-        print("VVM format: " + str(bs.vvm.getFormat()) + "\n")
+        print("\nVVM format: " + str(bs.vvm.getFormat()) + "\n")
         
     def initSG(self, freq= 10e6, power = -60):
         # Initializes signal generator paramters
@@ -381,7 +381,7 @@ if __name__ == "__main__":
     bs.setStep(1)
     
     # Preparing to scan
-    print("Preparing for data ...")
+    print("\nPreparing for data ...")
     bs.moveToCenter()
     bs.initScan()
      
