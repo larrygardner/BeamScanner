@@ -23,12 +23,18 @@ import MSL
         
 class Beamscanner:
     def __init__(self):
+        
+        # Input parameters
+        self.Range = int(input("Range: "))
+        self.Step = int(input("Step size: "))
+        self.save_name = input("Input file save name: ")
 
         # Instruments
         self.vvm = None
         self.msl_x = None
         self.msl_y = None
         self.sg = None
+        
         # Conversion factor from metric to microsteps [microsteps / mm]
         self.conv_factor = 5000
     
@@ -66,9 +72,8 @@ class Beamscanner:
         self.msl_x.hold()
         #self.msl_y.hold()
         
-    def setRange(self):
+    def setRange(self, Range):
         # Range of travel stage motion (50x50mm)
-        Range = int(input("Range: "))
         self.pos_x_max = int((Range/2) * self.conv_factor) # 25 mm * 5000 microsteps per mm
         #self.pos_y_max = self.pos_x_max
         self.pos_x_min = -self.pos_x_max
@@ -76,25 +81,12 @@ class Beamscanner:
         self.pos_y_max = int(Range/2)
         self.pos_y_min = -int(Range/2)
 
-    def setStep(self):
+    def setStep(self, res):
         # Sets step size for position increments
         # Converts resolution in mm to microsteps for MSL
-        res = int(input("Step size: "))
-        self.step = int(res * self.conv_factor)
+        step = int(res * self.conv_factor)
+        return step
     
-    def setRangeForCenter(self, Range):
-        # Set Range function only used in FindCenter function
-        self.pos_x_max = int(Range * self.conv_factor) # 25 mm * 5000 microsteps per mm
-        #self.pos_y_max = self.pos_x_max
-        self.pos_x_min = -self.pos_x_max
-        #self.pos_y_min = self.pos_x_min
-        self.pos_y_max = int(Range)
-        self.pos_y_min = -int(Range)
-        
-    def setStepForCenter(self, res):
-        # Sets step size for position increments used in FindCenter function only
-        self.step = int(res * self.conv_factor)
-        
     def findMaxPos(self):
         # Finds the X and Y positions of maximum voltmeter amplitude
         # Function only used in "findCenter"
@@ -110,21 +102,18 @@ class Beamscanner:
         print("Finding center...")
         
         res = 2.5
-        Range = 10
+        Range = 20
         self.pos_x_center = int(50 * self.conv_factor)
         self.pos_y_center = int(50 * self.conv_factor)
         
         while res >= .1:
-            self.setRangeForCenter(Range)
-            self.setStepForCenter(res)
-
             self.moveToCenter()
-            self.initScan()
-            self.scan()
+            self.initScan(Range)
+            self.scan(res)
             self.findMaxPos()
             
-            Range = res
-            res = Range / 5
+            Range = res * 2
+            res = Range / 10
         
         print("\n")
         
@@ -137,7 +126,8 @@ class Beamscanner:
         self.msl_x.setHome()
         #self.msl_y.setHome()
        
-    def initScan(self):
+    def initScan(self, Range):
+        self.setRange(Range)
         # Moves to minimum position in range to begin scan
         self.msl_x.moveAbs(self.pos_x_min)
         #self.msl_y.moveAbs(self.pos_y_min)
@@ -152,7 +142,8 @@ class Beamscanner:
         # VVM ready to begin collecting data
         self.vvm.trigger()
     
-    def scan(self):
+    def scan(self, res):
+        step = self.setStep(res)
         # Establish data arrays and parameters
         self.vvm_data = []
         self.pos_data = []
@@ -176,7 +167,7 @@ class Beamscanner:
                     print("    " + str(trans))
                     # X MSL steps relatively, if not in maximum position
                     if self.pos_x != self.pos_x_max:
-                        self.msl_x.moveRel(self.step)
+                        self.msl_x.moveRel(step)
                         self.msl_x.hold()
                         self.pos_x = int(self.msl_x.getPos())
                     elif self.pos_x == self.pos_x_max:
@@ -197,7 +188,7 @@ class Beamscanner:
                     print("    " + str(trans))
                     # X MSL steps relatively in opposite direction (-), if not in minimum position
                     if self.pos_x != self.pos_x_min:
-                        self.msl_x.moveRel(-self.step)
+                        self.msl_x.moveRel(-step)
                         self.msl_x.hold()
                         self.pos_x = int(self.msl_x.getPos())
                     elif self.pos_x == self.pos_x_min:
@@ -207,10 +198,10 @@ class Beamscanner:
                 pass
             
             # Y MSL steps relatively 
-            #self.msl_y.moveRel(self.step)
+            #self.msl_y.moveRel(step)
             #self.msl_y.hold()
             #self.pos_y = int(self.msl_y.getPos())
-            self.pos_y += self.step / self.conv_factor
+            self.pos_y += step / self.conv_factor
             
         time_initial = self.time_data[0]
         for i in range(len(self.time_data)):
@@ -220,7 +211,7 @@ class Beamscanner:
         # Turns off signal generator output
         self.sg.off()
     
-    def spreadsheet(self, save_name):
+    def spreadsheet(self):
         print("Writing data to spreadsheet...")
         
         # Creates localhost for libre office
@@ -257,7 +248,7 @@ class Beamscanner:
             sheet[1:len(self.pos_data)+1, 3].values = amp_data
             sheet[1:len(self.pos_data)+1, 4].values = phase_data
     
-            doc.save('BeamScannerData/' + str(save_name) + '.xlsx')
+            doc.save('BeamScannerData/' + str(self.save_name) + '.xlsx')
             doc.close()
     
         except (ValueError, KeyboardInterrupt, RuntimeError):
@@ -396,24 +387,20 @@ if __name__ == "__main__":
     # Find center of beam to calibrate to
     bs.findCenter()
     
-    # Sets scan parameters
-    bs.setStep()
-    bs.setRange()
-    
     # Preparing to scan
     print("\nPreparing for data ...")
     bs.moveToCenter()
-    bs.initScan()
+    bs.initScan(bs.Range)
 
     # Scanning    
     print("\nCollecting data ...")
-    bs.scan()
+    bs.scan(bs.Step)
 
     # Finished scanning
     print("\nExecution time: " + str(time.time() - bs.start_time))
     
     # Writing to spread sheet
-    bs.spreadsheet("50x50-1_10")
+    bs.spreadsheet()
 
     print("Plotting data ...")
     # Plots position vs. amplitude contour plot via function
@@ -424,7 +411,3 @@ if __name__ == "__main__":
     bs.y_plot()
 
     print("\nEnd.")
-
-    print("\nEnd.")
-
-    
