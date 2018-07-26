@@ -23,8 +23,8 @@ import MSL
 class Beamscanner:
     def __init__(self):
         # Input parameters
-        self.Range = int(input("Range: "))
-        self.Step = int(input("Step size: "))
+        self.Range = float(input("Range: "))
+        self.Step = float(input("Step size: "))
         self.save_name = input("Input file save name: ")
 
         # Instruments
