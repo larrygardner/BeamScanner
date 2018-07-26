@@ -58,7 +58,7 @@ class Beamscanner:
         self.sg.setPower(power)
         self.sg.on()
         print("Signal generator is ON at frequency of " + str(freq) + ".")
-    
+        
     def initMSL(self):
         # Initializes MSL home positions to minimum travel position to synchronize between tests
         self.msl_x.zero()
@@ -66,18 +66,33 @@ class Beamscanner:
         self.msl_x.hold()
         #self.msl_y.hold()
         
-    def setRange(self, Range = 25):
+    def setRange(self):
         # Range of travel stage motion (50x50mm)
+        Range = int(input("Range: "))
+        self.pos_x_max = int((Range/2) * self.conv_factor) # 25 mm * 5000 microsteps per mm
+        #self.pos_y_max = self.pos_x_max
+        self.pos_x_min = -self.pos_x_max
+        #self.pos_y_min = self.pos_x_min
+        self.pos_y_max = int(Range/2)
+        self.pos_y_min = -int(Range/2)
+
+    def setStep(self):
+        # Sets step size for position increments
+        # Converts resolution in mm to microsteps for MSL
+        res = int(input("Step size: "))
+        self.step = int(res * self.conv_factor)
+    
+    def setRangeForCenter(self, Range):
+        # Set Range function only used in FindCenter function
         self.pos_x_max = int(Range * self.conv_factor) # 25 mm * 5000 microsteps per mm
         #self.pos_y_max = self.pos_x_max
         self.pos_x_min = -self.pos_x_max
         #self.pos_y_min = self.pos_x_min
         self.pos_y_max = int(Range)
         self.pos_y_min = -int(Range)
-
-    def setStep(self, res = 1):
-        # Sets step size for position increments
-        # Converts resolution in mm to microsteps for MSL
+        
+    def setStepForCenter(self, res):
+        # Sets step size for position increments used in FindCenter function only
         self.step = int(res * self.conv_factor)
         
     def findMaxPos(self):
@@ -100,8 +115,8 @@ class Beamscanner:
         self.pos_y_center = int(50 * self.conv_factor)
         
         while res >= .1:
-            self.setRange(Range)
-            self.setStep(res)
+            self.setRangeForCenter(Range)
+            self.setStepForCenter(res)
 
             self.moveToCenter()
             self.initScan()
@@ -110,6 +125,8 @@ class Beamscanner:
             
             Range = res
             res = Range / 5
+        
+        print("\n")
         
     def moveToCenter(self):
         # Moves MSL's to center position and sets new home position
@@ -363,8 +380,8 @@ class Beamscanner:
 if __name__ == "__main__":
 
     # Begin
-    print("Starting...\n")
     bs = Beamscanner()
+    print("\nStarting...\n")
     bs.initTime()
 
     # Establishes instrument communication
@@ -378,11 +395,11 @@ if __name__ == "__main__":
 
     # Find center of beam to calibrate to
     bs.findCenter()
-
+    
     # Sets scan parameters
-    bs.setStep(1)
-    bs.setRange(5)
-
+    bs.setStep()
+    bs.setRange()
+    
     # Preparing to scan
     print("\nPreparing for data ...")
     bs.moveToCenter()
@@ -396,7 +413,7 @@ if __name__ == "__main__":
     print("\nExecution time: " + str(time.time() - bs.start_time))
     
     # Writing to spread sheet
-    bs.spreadsheet("objectTest")
+    bs.spreadsheet("50x50-1_10")
 
     print("Plotting data ...")
     # Plots position vs. amplitude contour plot via function
@@ -405,6 +422,8 @@ if __name__ == "__main__":
     bs.time_plot()
     # Plots amplitude and phase vs. y position for slice at center of beam
     bs.y_plot()
+
+    print("\nEnd.")
 
     print("\nEnd.")
 
