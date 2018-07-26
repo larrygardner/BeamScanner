@@ -49,7 +49,7 @@ class Beamscanner:
         self.vvm.setTransmission()
         self.vvm.setFormat(format)
         self.vvm.setTriggerBus()
-        print("\nVVM format: " + str(bs.vvm.getFormat()) + "\n")
+        print("VVM format: " + str(bs.vvm.getFormat()) + "\n")
         
     def initSG(self, freq= 10e6, power = -60):
         # Initializes signal generator paramters
@@ -65,16 +65,33 @@ class Beamscanner:
         self.msl_x.hold()
         self.msl_y.hold()
         
-    def setRange(self, Range = 25):
+    def setRange(self):
         # Range of travel stage motion (50x50mm)
-        self.pos_x_max = int(Range * self.conv_factor) # 25 mm * 5000 microsteps per mm
+        Range = int(input("Range: "))
+        self.pos_x_max = int((Range/2) * self.conv_factor) # 25 mm * 5000 microsteps per mm
         self.pos_y_max = self.pos_x_max
         self.pos_x_min = -self.pos_x_max
         self.pos_y_min = self.pos_x_min
         
-    def setStep(self, res = 1):
+    def setStep(self):
         # Sets step size for position increments
         # Converts resolution in mm to microsteps for MSL
+        res = int(input("Step: "))
+        self.step = int(res * self.conv_factor)
+
+    def setRangeForCenter(self, Range):
+        # Set Range function only used in FindCenter function only
+        # (Does not require user input)
+        self.pos_x_max = int(Range * self.conv_factor) # 25 mm * 5000 microsteps per mm
+        #self.pos_y_max = self.pos_x_max
+        self.pos_x_min = -self.pos_x_max
+        #self.pos_y_min = self.pos_x_min
+        self.pos_y_max = int(Range)
+        self.pos_y_min = -int(Range)
+        
+    def setStepForCenter(self, res):
+        # Sets step size for position increments used in FindCenter function only
+        # (Does not require user input)
         self.step = int(res * self.conv_factor)
     
     def findMaxPos(self):
@@ -97,8 +114,8 @@ class Beamscanner:
         self.pos_y_center = int(50 * self.conv_factor)
         
         while res >= .1:
-            self.setRange(Range)
-            self.setStep(res)
+            self.setRangeForCenter(Range)
+            self.setStepForCenter(res)
 
             self.moveToCenter()
             self.initScan()
@@ -107,6 +124,8 @@ class Beamscanner:
             
             Range = res
             res = Range / 5
+
+        print("\n")
         
    def moveToCenter(self):
         # Moves MSL's to center position and sets new home position
@@ -381,7 +400,7 @@ if __name__ == "__main__":
     bs.setStep(1)
     
     # Preparing to scan
-    print("\nPreparing for data ...")
+    print("Preparing for data ...")
     bs.moveToCenter()
     bs.initScan()
      
