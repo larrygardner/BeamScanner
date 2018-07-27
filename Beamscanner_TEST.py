@@ -385,6 +385,7 @@ if __name__ == "__main__":
     rm = bs.initGPIB()   
     bs.vvm = HP8508A.HP8508A(rm.open_resource("GPIB0::8::INSTR"))
     bs.msl_x = MSL.MSL(rm.open_resource("ASRL/dev/ttyUSB0"))
+    bs.msl_y = MSL.MSL(rm.open_resource("ASRL/dev/ttyUSB1"))
     
     # Initializes instruments
     bs.initVVM()
