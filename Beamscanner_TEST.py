@@ -8,6 +8,7 @@ import visa
 import os
 import time
 import pyoo
+import sys
 
 import numpy as np
 import matplotlib
@@ -34,7 +35,14 @@ class Beamscanner:
         # Assigns start time
         self.start_time = time.time()
     
-    def readUSE(self, useFile="Beamscan.use"):
+    def readUSE(self):
+        # If use file is entered, use that file instead of default.
+        if len(sys.argv) > 1:
+            useFile = sys.argv[1]
+        else:
+            useFile = "Beamscan.use"
+        print("USE file: ",useFile)
+        
         # Reads USE file for parameters
         f = open(useFile, 'r')
         lines = f.readlines()
@@ -379,13 +387,13 @@ if __name__ == "__main__":
     bs = Beamscanner()
     print("\nStarting...\n")
     bs.initTime()
-    bs.readUSE("Beamscan.use")
+    bs.readUSE()
 
     # Establishes instrument communication
     rm = bs.initGPIB()   
     bs.vvm = HP8508A.HP8508A(rm.open_resource("GPIB0::8::INSTR"))
     bs.msl_x = MSL.MSL(rm.open_resource("ASRL/dev/ttyUSB0"))
-    bs.msl_y = MSL.MSL(rm.open_resource("ASRL/dev/ttyUSB1"))
+    #bs.msl_y = MSL.MSL(rm.open_resource("ASRL/dev/ttyUSB1"))
     
     # Initializes instruments
     bs.initVVM()

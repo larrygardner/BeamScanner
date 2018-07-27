@@ -34,6 +34,13 @@ class Beamscanner:
         self.start_time = time.time()
 
     def readUSE(self, useFile="Beamscan.use"):
+        # If use file is entered, use that file instead of default.
+        if len(sys.argv) > 1:
+            useFile = sys.argv[1]
+        else:
+            useFile = "Beamscan.use"
+        print("USE file: ",useFile)
+               
         # Reads USE file for parameters
         f = open(useFile, 'r')
         lines = f.readlines()
@@ -377,6 +384,7 @@ if __name__ == "__main__":
     bs = Beamscanner()
     print("Starting...\n")
     bs.initTime()
+    bs.readUSE()
     
     # Establishes instrument communication
     rm = bs.initGPIB()
