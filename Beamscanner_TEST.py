@@ -115,7 +115,7 @@ class Beamscanner:
         print("Finding center...")
         
         res = 2.5
-        Range = 20
+        Range = 10
         self.pos_x_center = int(50 * self.conv_factor)
         self.pos_y_center = int(50 * self.conv_factor)
         
@@ -126,7 +126,7 @@ class Beamscanner:
             self.findMaxPos()
             
             Range = res * 2
-            res = Range / 10
+            res = res / 5
         
         print("\n")
         
@@ -210,10 +210,12 @@ class Beamscanner:
                 self.direction = "right"
                 pass
             
-            # Y MSL steps relatively 
-            #self.msl_y.moveRel(step)
-            #self.msl_y.hold()
-            #self.pos_y = int(self.msl_y.getPos())
+            # Y MSL steps relatively. Use Y step increment if testing using only 1 MSL
+            '''
+            self.msl_y.moveRel(step)
+            self.msl_y.hold()
+            self.pos_y = int(self.msl_y.getPos())
+            '''
             self.pos_y += step / self.conv_factor
             
         time_initial = self.time_data[0]
@@ -244,10 +246,10 @@ class Beamscanner:
             y_data.append(self.pos_data[i][1])
 
             # Reformats VVM data if not already in proper form
-            if type(self.vvm_data[0]) == tuple:
+            if type(self.vvm_data[i]) == tuple:
                 amp_data.append(self.vvm_data[i][0])
                 phase_data.append(self.vvm_data[i][1])
-            elif type(vvm_data[0]) == str:
+            elif type(vvm_data[i]) == str:
                 amp_data.append(float(self.vvm_data[i].split(",")[0]))
                 phase_data.append(float(self.vvm_data[i].split(",")[1]))
     
@@ -279,10 +281,10 @@ class Beamscanner:
             x_data.append(self.pos_data[i][0])
             y_data.append(self.pos_data[i][1])
     
-            if type(self.vvm_data[0]) == tuple:
+            if type(self.vvm_data[i]) == tuple:
                 amp_data.append(self.vvm_data[i][0])
         
-            elif type(self.vvm_data[0]) == str:
+            elif type(self.vvm_data[i]) == str:
                 amp_data.append(float(self.vvm_data[i].split(",")[0]))
     
         pos_x_min = min(x_data)
@@ -308,14 +310,13 @@ class Beamscanner:
         # Makes time vs amplitude & phase plot given beamscanner data format, not spreadsheet data format
         amp_data = []
         phase_data = []
-    
-        if type(self.vvm_data[0]) == tuple:
-            for i in self.vvm_data:
+
+        for i in self.vvm_data:
+            if type(self.vvm_data[i]) == tuple:
                 amp_data.append(i[0])
                 phase_data.append(i[1])
         
-        elif type(self.vvm_data[0]) == str:
-            for i in self.vvm_data:
+            elif type(self.vvm_data[i]) == str:
                 amp_data.append(float(i.split(",")[0]))
                 phase_data.append(float(i.split(",")[1]))
         
@@ -416,7 +417,7 @@ if __name__ == "__main__":
     
     # Writing to spread sheet
     bs.spreadsheet()
-
+    '''
     print("Plotting data ...")
     # Plots position vs. amplitude contour plot via function
     bs.contour_plot()
@@ -424,7 +425,7 @@ if __name__ == "__main__":
     bs.time_plot()
     # Plots amplitude and phase vs. y position for slice at center of beam
     bs.y_plot()
-
+    '''
     print("\nEnd.")
 
     
