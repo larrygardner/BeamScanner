@@ -305,14 +305,13 @@ class Beamscanner:
         # Makes time vs amplitude & phase plot given beamscanner data format, not spreadsheet data format
         amp_data = []
         phase_data = []
-    
-        if type(self.vvm_data[0]) == tuple:
-            for i in self.vvm_data:
+
+        for i in self.vvm_data:
+            if type(self.vvm_data[i]) == tuple:
                 amp_data.append(i[0])
                 phase_data.append(i[1])
         
-        elif type(self.vvm_data[0]) == str:
-            for i in self.vvm_data:
+            elif type(self.vvm_data[i]) == str:
                 amp_data.append(float(i.split(",")[0]))
                 phase_data.append(float(i.split(",")[1]))
         
