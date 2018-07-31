@@ -241,10 +241,10 @@ class Beamscanner:
             y_data.append(self.pos_data[i][1])
             
             # Reformats VVM data if not already in proper form
-            if type(self.vvm_data[0]) == tuple:
+            if type(self.vvm_data[i]) == tuple:
                 amp_data.append(self.vvm_data[i][0])
                 phase_data.append(self.vvm_data[i][1])
-            elif type(vvm_data[0]) == str:
+            elif type(vvm_data[i]) == str:
                 amp_data.append(float(self.vvm_data[i].split(",")[0]))
                 phase_data.append(float(self.vvm_data[i].split(",")[1]))
     
@@ -276,10 +276,10 @@ class Beamscanner:
             x_data.append(self.pos_data[i][0])
             y_data.append(self.pos_data[i][1])
     
-            if type(self.vvm_data[0]) == tuple:
+            if type(self.vvm_data[i]) == tuple:
                 amp_data.append(self.vvm_data[i][0])
         
-            elif type(self.vvm_data[0]) == str:
+            elif type(self.vvm_data[i]) == str:
                 amp_data.append(float(self.vvm_data[i].split(",")[0]))
     
         pos_x_min = min(x_data)
@@ -343,11 +343,11 @@ class Beamscanner:
             if self.pos_data[i][0] == 0:
                 y_data.append(self.pos_data[i][1])
     
-                if type(self.vvm_data[0]) == tuple:
+                if type(self.vvm_data[i]) == tuple:
                     amp_data.append(self.vvm_data[i][0])
                     phase_data.append(self.vvm_data[i][1])
         
-                elif type(self.vvm_data[0]) == str:
+                elif type(self.vvm_data[i]) == str:
                     amp_data.append(float(self.vvm_data[i].split(",")[0]))
                     phase_data.append(float(self.vvm_data[i].split(",")[1]))
             
