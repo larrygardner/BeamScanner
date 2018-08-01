@@ -162,7 +162,7 @@ class Beamscanner:
         self.time_data = []
 
         self.direction = "right"
-        self.delay = 0.05
+        self.delay = 0
         
         while self.pos_y <= self.pos_y_max:
             # "Direction" is the direction at which the X MSL travels
@@ -172,11 +172,11 @@ class Beamscanner:
                     # Collects VVM and position data
                     time.sleep(self.delay)
                     self.time_data.append(time.time())
-                    trans = self.vvm.getTransmission()
-                    self.vvm_data.append(trans)
+                    self.trans = self.vvm.getTransmission()
+                    self.vvm_data.append(self.trans)
                     self.pos_data.append((self.pos_x/self.conv_factor,self.pos_y))
                     print("    X: "+ str(round(self.pos_x/self.conv_factor,3)) + ", Y: " + str(round(self.pos_y , 3)))
-                    print("    " + str(trans))
+                    print("    " + str(self.trans))
                     # X MSL steps relatively, if not in maximum position
                     if self.pos_x != self.pos_x_max:
                         self.msl_x.moveRel(step)
@@ -193,11 +193,11 @@ class Beamscanner:
                     # Collects VVM and position data
                     time.sleep(self.delay)
                     self.time_data.append(time.time())
-                    trans = self.vvm.getTransmission()
-                    self.vvm_data.append(trans)
+                    self.trans = self.vvm.getTransmission()
+                    self.vvm_data.append(self.trans)
                     self.pos_data.append((self.pos_x/self.conv_factor,self.pos_y))
                     print("    X: " + str(round(self.pos_x/self.conv_factor , 3)) + ", Y: " + str(round(self.pos_y, 3)))
-                    print("    " + str(trans))
+                    print("    " + str(self.trans))
                     # X MSL steps relatively in opposite direction (-), if not in minimum position
                     if self.pos_x != self.pos_x_min:
                         self.msl_x.moveRel(-step)
