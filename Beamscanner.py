@@ -14,7 +14,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.mlab import griddata
 import numpy.polynomial.polynomial as poly
-from time import sleep
 
 import HP8508A
 import HMCT2240
@@ -84,7 +83,7 @@ class Beamscanner:
         self.LO.setPower(self.LOpow)
         self.LO.on()
         print("RF: Frequency = " + str(self.RFfreq) + " Hz, Power = " + str(self.RFpow) +
-              " dBm\nLO: Frequency =  " + str(self.LOfreq) + " Hz, Power = " + str(self.LOpow) + "dBm")        
+              " dBm\nLO: Frequency =  " + str(self.LOfreq) + " Hz, Power = " + str(self.LOpow) + " dBm")        
 
     def initMSL(self):
         # Sets MSL home positions to minimum position to synchronize between tests
@@ -188,7 +187,6 @@ class Beamscanner:
             if self.direction == "right":
                 while self.pos_x <= self.pos_x_max:
                     # Collects VVM and position data
-                    time.sleep(self.delay)
                     self.time_data.append(time.time())
                     # Gets transmissions from VVM and loops in case of error
                     while True:
@@ -216,7 +214,6 @@ class Beamscanner:
             elif self.direction == "left":
                 while self.pos_x >= self.pos_x_min:
                     # Collects VVM and position data
-                    time.sleep(self.delay)
                     self.time_data.append(time.time())
                     while True:
                         try:
@@ -308,7 +305,7 @@ class Beamscanner:
         yi = np.linspace(pos_y_min, pos_y_max, 1000)
         zi = griddata(x_data, y_data, amp_data, xi, yi, interp = "linear")
 
-        CS = plt.contour(xi, yi, zi, levels=[-35,-30,-25,-20, -15, -10, -5], colors='black')
+        CS = plt.contour(xi, yi, zi, colors='black')
         plt.clabel(CS, inline =1)
         plt.xlabel("X Position (mm)")
         plt.ylabel("Y Position (mm)")
